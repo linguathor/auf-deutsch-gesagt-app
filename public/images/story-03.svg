@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="800" height="200">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e5f3a"/>
+      <stop offset="100%" style="stop-color:#2d8760"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#a0f0c0;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#a0f0c0;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="200" rx="12" fill="url(#bg)"/>
+  <!-- Decorative circles -->
+  <circle cx="700" cy="40" r="80" fill="#a0f0c0" opacity="0.08"/>
+  <circle cx="650" cy="160" r="120" fill="#a0f0c0" opacity="0.05"/>
+  <circle cx="100" cy="180" r="60" fill="#a0f0c0" opacity="0.06"/>
+  <!-- Accent bar -->
+  <rect x="0" y="0" width="6" height="200" rx="3" fill="#a0f0c0" opacity="0.8"/>
+  <!-- Module number -->
+  <text x="40" y="50" font-family="system-ui, -apple-system, sans-serif" font-size="16" fill="#a0f0c0" opacity="0.9" font-weight="600">MODUL 3</text>
+  <!-- Title -->
+  <text x="40" y="95" font-family="system-ui, -apple-system, sans-serif" font-size="32" fill="white" font-weight="700">Man nehme, so man hat</text>
+  <!-- Verb -->
+  <text x="40" y="130" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="white" opacity="0.7" font-style="italic">nehmen</text>
+  <!-- Emoji -->
+  <text x="680" y="120" font-size="64" text-anchor="middle">🎲</text>
+</svg>
