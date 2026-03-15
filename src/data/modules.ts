@@ -509,7 +509,8 @@ const module1: CourseModule = {
         "end": 315.6,
         "text": "So schnell werde ich hier hoffentlich nicht wieder wegziehen.\""
       }
-    ]
+    ],
+    "audioFile": "/audio/module-1-der-umzug.opus"
   },
   "coreVerbs": [
     {
