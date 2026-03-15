@@ -196,6 +196,19 @@ export default function StoryPlayer({ module, onComplete }: StoryPlayerProps) {
         ))}
       </div>
 
+      {/* SoundCloud embed */}
+      {module.story.soundcloudUrl && (
+        <div className="mt-6 rounded-lg overflow-hidden">
+          <iframe
+            width="100%"
+            height="166"
+            allow="autoplay"
+            src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(module.story.soundcloudUrl)}&color=%23c9a84c&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false`}
+          />
+        </div>
+      )}
+
+      {/* Local audio file (for future modules) */}
       {module.story.audioFile && (
         <audio
           ref={audioRef}

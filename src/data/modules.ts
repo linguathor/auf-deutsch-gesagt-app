@@ -510,7 +510,7 @@ const module1: CourseModule = {
         "text": "So schnell werde ich hier hoffentlich nicht wieder wegziehen.\""
       }
     ],
-    "audioFile": "/audio/module-1-der-umzug.opus"
+    "soundcloudUrl": "https://soundcloud.com/business-linguathor/der-umzug"
   },
   "coreVerbs": [
     {

@@ -54,7 +54,7 @@ const moduleDefs = [
     title: "Der Umzug",
     subtitle: "ziehen – bewegen, umziehen und anziehen",
     focusVerb: "ziehen",
-    audioFile: "/audio/module-1-der-umzug.opus",
+    soundcloudUrl: "https://soundcloud.com/business-linguathor/der-umzug",
     headerImage: "/images/story-01.svg",
     learningGoals: [
       "Trennbare und untrennbare Verben mit «ziehen» sicher verwenden",
@@ -1352,6 +1352,7 @@ for (const def of moduleDefs) {
       paragraphs: parsed.paragraphs,
       sentences: parsed.sentences,
       ...(def.audioFile && { audioFile: def.audioFile }),
+      ...(def.soundcloudUrl && { soundcloudUrl: def.soundcloudUrl }),
     },
     coreVerbs: def.coreVerbs,
     idioms: def.idioms,
