@@ -141,8 +141,20 @@ export default function StoryPlayer({ module, onComplete }: StoryPlayerProps) {
         )}
       </div>
 
-      {/* Audio controls */}
-      <div className="flex items-center gap-4 mb-6">
+      {/* SoundCloud embed */}
+      {module.story.soundcloudUrl && (
+        <div className="mb-4 rounded-lg overflow-hidden">
+          <iframe
+            width="100%"
+            height="166"
+            allow="autoplay"
+            src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(module.story.soundcloudUrl)}&color=%23c9a84c&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false`}
+          />
+        </div>
+      )}
+
+      {/* Audio controls (TTS / local file) */}
+      <div className={`flex items-center gap-4 ${module.story.soundcloudUrl ? "hidden" : "mb-6"}`}>
         <button
           onClick={togglePlay}
           className="w-10 h-10 rounded-full bg-gold-500 hover:bg-gold-400 text-navy-900 flex items-center justify-center transition-colors"
@@ -170,7 +182,7 @@ export default function StoryPlayer({ module, onComplete }: StoryPlayerProps) {
       </div>
 
       {/* Story text with sentence highlighting */}
-      <div className="leading-relaxed text-foreground/90 space-y-4">
+      <div className="leading-relaxed text-foreground/90 space-y-4 mt-4">
         {module.story.paragraphs.map((para, pIdx) => (
           <p key={pIdx} className="text-base">
             {sentences
@@ -195,18 +207,6 @@ export default function StoryPlayer({ module, onComplete }: StoryPlayerProps) {
           </p>
         ))}
       </div>
-
-      {/* SoundCloud embed */}
-      {module.story.soundcloudUrl && (
-        <div className="mt-6 rounded-lg overflow-hidden">
-          <iframe
-            width="100%"
-            height="166"
-            allow="autoplay"
-            src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(module.story.soundcloudUrl)}&color=%23c9a84c&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false`}
-          />
-        </div>
-      )}
 
       {/* Local audio file (for future modules) */}
       {module.story.audioFile && (
