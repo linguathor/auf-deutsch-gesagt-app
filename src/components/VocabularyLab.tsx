@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Volume2, ChevronDown, ChevronUp } from "lucide-react";
 import { VocabItem } from "@/types";
-import { speakGerman } from "@/lib/tts";
+import { useTTS } from "@/lib/use-tts";
 
 interface VocabularyLabProps {
   coreVerbs: VocabItem[];
@@ -15,6 +15,7 @@ export default function VocabularyLab({ coreVerbs, idioms, onComplete }: Vocabul
   const [expandedVerb, setExpandedVerb] = useState<number | null>(null);
   const [expandedIdiom, setExpandedIdiom] = useState<number | null>(null);
   const [viewedCount, setViewedCount] = useState(0);
+  const { speak } = useTTS();
 
   const totalItems = coreVerbs.length + idioms.length;
 
@@ -33,7 +34,7 @@ export default function VocabularyLab({ coreVerbs, idioms, onComplete }: Vocabul
 
   const handleSpeak = (e: React.MouseEvent, text: string) => {
     e.stopPropagation();
-    speakGerman(text);
+    speak(text);
   };
 
   return (
@@ -76,7 +77,7 @@ export default function VocabularyLab({ coreVerbs, idioms, onComplete }: Vocabul
                   {verb.definition && (
                     <p className="text-sm text-foreground/80 mt-2 flex items-start gap-2">
                       <button
-                        onClick={() => speakGerman(verb.definition!)}
+                        onClick={() => speak(verb.definition!)}
                         className="text-gold-500 hover:text-gold-400 transition-colors shrink-0 mt-0.5"
                         title="Definition anhören"
                       >
@@ -91,7 +92,7 @@ export default function VocabularyLab({ coreVerbs, idioms, onComplete }: Vocabul
                   {verb.example && (
                     <p className="text-sm text-muted mt-2 flex items-start gap-2">
                       <button
-                        onClick={() => speakGerman(verb.example!)}
+                        onClick={() => speak(verb.example!)}
                         className="text-gold-500 hover:text-gold-400 transition-colors shrink-0 mt-0.5"
                         title="Beispiel anhören"
                       >
@@ -149,7 +150,7 @@ export default function VocabularyLab({ coreVerbs, idioms, onComplete }: Vocabul
                     {idiom.definition && (
                       <p className="text-sm text-foreground/80 mt-2 flex items-start gap-2">
                         <button
-                          onClick={() => speakGerman(idiom.definition!)}
+                          onClick={() => speak(idiom.definition!)}
                           className="text-gold-500 hover:text-gold-400 transition-colors shrink-0 mt-0.5"
                           title="Definition anhören"
                         >
@@ -164,7 +165,7 @@ export default function VocabularyLab({ coreVerbs, idioms, onComplete }: Vocabul
                     {idiom.example && (
                       <p className="text-sm text-muted mt-2 flex items-start gap-2">
                         <button
-                          onClick={() => speakGerman(idiom.example!)}
+                          onClick={() => speak(idiom.example!)}
                           className="text-gold-500 hover:text-gold-400 transition-colors shrink-0 mt-0.5"
                           title="Beispiel anhören"
                         >

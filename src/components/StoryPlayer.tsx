@@ -1,118 +1,134 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { Play, Pause, RotateCcw, Volume2 } from "lucide-react";
-import { CourseModule } from "@/types";
-import { speakGerman, stopSpeaking } from "@/lib/tts";
+import { useState, useRef, useCallback, useMemo } from "react";
+import { Play, Pause, RotateCcw, Volume2, Loader2, X } from "lucide-react";
+import { CourseModule, VocabItem } from "@/types";
+import { useTTS } from "@/lib/use-tts";
 
 interface StoryPlayerProps {
   module: CourseModule;
   onComplete?: () => void;
 }
 
-function renderBold(text: string) {
-  const parts = text.split(/\*\*(.*?)\*\*/g);
-  return parts.map((part, i) =>
-    i % 2 === 1 ? (
-      <strong key={i} className="font-bold text-foreground">
-        {part}
-      </strong>
-    ) : (
-      part
-    )
-  );
+/** Build a lookup map: lowercase word → VocabItem */
+function buildWordLookup(module: CourseModule): Map<string, VocabItem> {
+  const map = new Map<string, VocabItem>();
+  for (const v of module.coreVerbs) {
+    // Add the main german entry and also each word in it
+    const words = v.german.toLowerCase().split(/\s+/);
+    for (const w of words) {
+      if (w.length > 2) map.set(w.replace(/[^a-zäöüß]/g, ""), v);
+    }
+    map.set(v.german.toLowerCase(), v);
+  }
+  for (const v of module.idioms) {
+    const words = v.german.toLowerCase().split(/\s+/);
+    for (const w of words) {
+      if (w.length > 2) map.set(w.replace(/[^a-zäöüß]/g, ""), v);
+    }
+    map.set(v.german.toLowerCase(), v);
+  }
+  return map;
+}
+
+/** Strip bold markers for matching */
+function stripBold(text: string) {
+  return text.replace(/\*\*/g, "");
 }
 
 export default function StoryPlayer({ module, onComplete }: StoryPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSentence, setCurrentSentence] = useState(-1);
-  const [currentTime, setCurrentTime] = useState(0);
   const [hasFinished, setHasFinished] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval>>(null);
+  const [selectedWord, setSelectedWord] = useState<{
+    word: string;
+    vocab: VocabItem;
+    rect: { top: number; left: number };
+  } | null>(null);
+
+  const { speak, stop, loading } = useTTS();
+  const cancelledRef = useRef(false);
 
   const sentences = module.story.sentences;
+  const wordLookup = useMemo(() => buildWordLookup(module), [module]);
 
-  const updateCurrent = useCallback(() => {
-    if (!audioRef.current) return;
-    const t = audioRef.current.currentTime;
-    setCurrentTime(t);
-    const idx = sentences.findIndex((s) => t >= s.start && t < s.end);
-    setCurrentSentence(idx);
-  }, [sentences]);
+  // Sequential playback: speak each sentence one-by-one
+  const playAll = useCallback(async () => {
+    cancelledRef.current = false;
+    setIsPlaying(true);
+    setHasFinished(false);
 
-  const togglePlay = useCallback(() => {
-    if (!module.story.audioFile) {
-      // Demo mode: simulate playback via timers
-      if (isPlaying) {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        setIsPlaying(false);
-      } else {
-        setIsPlaying(true);
-        let time = currentTime;
-        intervalRef.current = setInterval(() => {
-          time += 0.1;
-          setCurrentTime(time);
-          const idx = sentences.findIndex((s) => time >= s.start && time < s.end);
-          setCurrentSentence(idx);
-          if (time >= sentences[sentences.length - 1].end) {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-            setIsPlaying(false);
-            setHasFinished(true);
-            onComplete?.();
-          }
-        }, 100);
-      }
-      return;
+    for (let i = 0; i < sentences.length; i++) {
+      if (cancelledRef.current) break;
+      setCurrentSentence(i);
+      await speak(sentences[i].text);
     }
-    // Real audio mode
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  }, [isPlaying, currentTime, sentences, module.story.audioFile, onComplete]);
 
-  const restart = useCallback(() => {
-    setCurrentTime(0);
+    if (!cancelledRef.current) {
+      setHasFinished(true);
+      onComplete?.();
+    }
     setCurrentSentence(-1);
     setIsPlaying(false);
-    setHasFinished(false);
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-    }
-    if (intervalRef.current) clearInterval(intervalRef.current);
-  }, []);
+  }, [sentences, speak, onComplete]);
 
-  const jumpToSentence = useCallback(
+  const togglePlay = useCallback(() => {
+    if (isPlaying) {
+      cancelledRef.current = true;
+      stop();
+      setIsPlaying(false);
+      setCurrentSentence(-1);
+    } else {
+      playAll();
+    }
+  }, [isPlaying, stop, playAll]);
+
+  const restart = useCallback(() => {
+    cancelledRef.current = true;
+    stop();
+    setIsPlaying(false);
+    setCurrentSentence(-1);
+    setHasFinished(false);
+  }, [stop]);
+
+  const speakSentence = useCallback(
     (idx: number) => {
+      if (isPlaying) return; // don't interrupt sequential playback
       const s = sentences[idx];
       if (!s) return;
-      setCurrentTime(s.start);
       setCurrentSentence(idx);
-      if (audioRef.current) {
-        audioRef.current.currentTime = s.start;
-      }
-      // Also speak the sentence via TTS
-      stopSpeaking();
-      speakGerman(s.text);
+      speak(s.text).then(() => {
+        setCurrentSentence(-1);
+      });
     },
-    [sentences]
+    [sentences, speak, isPlaying]
   );
 
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
+  const handleWordClick = useCallback(
+    (e: React.MouseEvent, word: string) => {
+      e.stopPropagation();
+      const clean = word.toLowerCase().replace(/[^a-zäöüß]/g, "");
+      const vocab = wordLookup.get(clean);
+      if (!vocab) {
+        // Just speak the word even if no vocab entry
+        speak(word);
+        return;
+      }
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      setSelectedWord({
+        word,
+        vocab,
+        rect: { top: rect.bottom + window.scrollY + 8, left: rect.left + window.scrollX },
+      });
+      speak(word);
+    },
+    [wordLookup, speak]
+  );
 
-  const totalDuration = sentences.length
-    ? sentences[sentences.length - 1].end
-    : 0;
-  const progressPct = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
+  const progressPct =
+    sentences.length > 0 && currentSentence >= 0
+      ? ((currentSentence + 1) / sentences.length) * 100
+      : 0;
 
   // Precompute which sentences belong to which paragraph (sequential assignment)
   const sentencesByPara = useMemo(() => {
@@ -125,7 +141,7 @@ export default function StoryPlayer({ module, onComplete }: StoryPlayerProps) {
     ) {
       const para = module.story.paragraphs[pIdx];
       while (sIdx < sentences.length) {
-        const sTxt = sentences[sIdx].text.replace(/["""]/g, "");
+        const sTxt = stripBold(sentences[sIdx].text).replace(/["""]/g, "");
         if (para.replace(/["""]/g, "").includes(sTxt)) {
           result[pIdx].push(sIdx);
           sIdx++;
@@ -134,13 +150,37 @@ export default function StoryPlayer({ module, onComplete }: StoryPlayerProps) {
         }
       }
     }
-    // Remaining sentences go to the last paragraph
     while (sIdx < sentences.length) {
       result[result.length - 1].push(sIdx);
       sIdx++;
     }
     return result;
   }, [sentences, module.story.paragraphs]);
+
+  /** Render a sentence as individually clickable words */
+  const renderWords = (text: string, sentenceIdx: number) => {
+    // Strip bold markers then split into words preserving whitespace
+    const plain = stripBold(text);
+    const words = plain.split(/(\s+)/);
+    return words.map((w, wi) => {
+      if (/^\s+$/.test(w)) return w; // preserve whitespace
+      const clean = w.toLowerCase().replace(/[^a-zäöüß]/g, "");
+      const hasVocab = clean.length > 2 && wordLookup.has(clean);
+      return (
+        <span
+          key={`${sentenceIdx}-${wi}`}
+          onClick={(e) => handleWordClick(e, w)}
+          className={`cursor-pointer transition-colors ${
+            hasVocab
+              ? "underline decoration-gold-500/40 decoration-dotted underline-offset-2 hover:text-gold-400"
+              : "hover:text-gold-400"
+          }`}
+        >
+          {w}
+        </span>
+      );
+    });
+  };
 
   return (
     <div className="bg-card rounded-xl border border-border p-6">
@@ -162,27 +202,20 @@ export default function StoryPlayer({ module, onComplete }: StoryPlayerProps) {
 
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-foreground">Geschichte</h3>
-        {hasFinished && (
-          <span className="text-xs text-emerald-400 font-medium">
-            ✓ Gelesen
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {loading && (
+            <Loader2 className="w-4 h-4 text-gold-500 animate-spin" />
+          )}
+          {hasFinished && (
+            <span className="text-xs text-emerald-400 font-medium">
+              ✓ Gelesen
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* SoundCloud embed */}
-      {module.story.soundcloudUrl && (
-        <div className="mb-4 rounded-lg overflow-hidden">
-          <iframe
-            width="100%"
-            height="166"
-            allow="autoplay"
-            src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(module.story.soundcloudUrl)}&color=%23c9a84c&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false`}
-          />
-        </div>
-      )}
-
-      {/* Audio controls (TTS / local file) */}
-      <div className={`flex items-center gap-4 ${module.story.soundcloudUrl ? "hidden" : "mb-6"}`}>
+      {/* Audio controls */}
+      <div className="flex items-center gap-4 mb-6">
         <button
           onClick={togglePlay}
           className="w-10 h-10 rounded-full bg-gold-500 hover:bg-gold-400 text-navy-900 flex items-center justify-center transition-colors"
@@ -209,42 +242,78 @@ export default function StoryPlayer({ module, onComplete }: StoryPlayerProps) {
         <Volume2 className="w-4 h-4 text-muted" />
       </div>
 
-      {/* Story text with sentence highlighting */}
-      <div className="leading-relaxed text-foreground/90 space-y-4 mt-4">
-        {module.story.paragraphs.map((para, pIdx) => (
+      {/* Story text with sentence highlighting + clickable words */}
+      <div className="leading-relaxed text-foreground/90 space-y-4">
+        {module.story.paragraphs.map((_para, pIdx) => (
           <p key={pIdx} className="text-base">
             {(sentencesByPara[pIdx] || []).map((sIdx) => {
-                const s = sentences[sIdx];
-                const isActive = sIdx === currentSentence;
-                return (
-                  <span
-                    key={sIdx}
-                    onClick={() => jumpToSentence(sIdx)}
-                    className={`story-word inline cursor-pointer transition-all duration-150 ${
-                      isActive
-                        ? "bg-gold-500/30 text-gold-300 rounded px-0.5"
-                        : "hover:text-gold-400"
-                    }`}
-                  >
-                    {renderBold(s.displayText ?? s.text)}{" "}
-                  </span>
-                );
-              })}
+              const s = sentences[sIdx];
+              const isActive = sIdx === currentSentence;
+              return (
+                <span
+                  key={sIdx}
+                  onClick={() => speakSentence(sIdx)}
+                  className={`inline transition-all duration-200 ${
+                    isActive
+                      ? "bg-gold-500/25 text-gold-300 rounded px-0.5 py-0.5"
+                      : ""
+                  }`}
+                >
+                  {renderWords(s.displayText ?? s.text, sIdx)}{" "}
+                </span>
+              );
+            })}
           </p>
         ))}
       </div>
 
-      {/* Local audio file (for future modules) */}
-      {module.story.audioFile && (
-        <audio
-          ref={audioRef}
-          src={module.story.audioFile}
-          onTimeUpdate={updateCurrent}
-          onEnded={() => {
-            setIsPlaying(false);
-            setHasFinished(true);
-            onComplete?.();
-          }}
+      {/* Word tooltip popup */}
+      {selectedWord && (
+        <div
+          className="fixed z-50 bg-navy-800 border border-gold-500/30 rounded-lg shadow-xl p-4 max-w-xs"
+          style={{ top: selectedWord.rect.top, left: selectedWord.rect.left }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-semibold text-gold-400">
+              {selectedWord.vocab.german}
+            </span>
+            <button
+              onClick={() => setSelectedWord(null)}
+              className="text-muted hover:text-foreground transition-colors ml-3"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          {selectedWord.vocab.definition && (
+            <p className="text-sm text-foreground/80 mb-1 flex items-start gap-2">
+              <button
+                onClick={() => speak(selectedWord.vocab.definition!)}
+                className="text-gold-500 hover:text-gold-400 shrink-0 mt-0.5"
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+              </button>
+              <span>{selectedWord.vocab.definition}</span>
+            </p>
+          )}
+          {selectedWord.vocab.example && (
+            <p className="text-sm text-muted mt-1 flex items-start gap-2">
+              <button
+                onClick={() => speak(selectedWord.vocab.example!)}
+                className="text-gold-500 hover:text-gold-400 shrink-0 mt-0.5"
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+              </button>
+              <span className="italic">{selectedWord.vocab.example}</span>
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Click-away overlay for tooltip */}
+      {selectedWord && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setSelectedWord(null)}
         />
       )}
     </div>

@@ -99,7 +99,6 @@ export interface CourseModule {
     text: string;
     paragraphs: string[];
     audioFile?: string;
-    soundcloudUrl?: string;
     sentences: SentenceTimestamp[];
     headerImage?: string;
   };

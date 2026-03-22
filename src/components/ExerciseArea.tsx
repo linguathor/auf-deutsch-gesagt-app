@@ -15,7 +15,7 @@ import {
   MicOff,
 } from "lucide-react";
 import { Exercise } from "@/types";
-import { speakGerman } from "@/lib/tts";
+import { useTTS } from "@/lib/use-tts";
 
 interface ExerciseAreaProps {
   exercises: Exercise[];
@@ -330,6 +330,7 @@ function GapFillExercise({
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [checked, setChecked] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const { speak } = useTTS();
 
   const handleCheck = () => {
     setChecked(true);
@@ -365,7 +366,7 @@ function GapFillExercise({
           <div key={idx} className="flex items-center gap-3">
             {exercise.skill === "hoeren" && (
               <button
-                onClick={() => speakGerman(sent.text.replace("___", sent.answer))}
+                onClick={() => speak(sent.text.replace("___", sent.answer))}
                 className="text-gold-500 hover:text-gold-400 transition-colors shrink-0"
                 title="Satz anhören"
               >
@@ -440,6 +441,7 @@ function MatchingExercise({
   exercise: Extract<Exercise, { type: "matching" }>;
   onComplete?: () => void;
 }) {
+  const { speak } = useTTS();
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
   const [matches, setMatches] = useState<Record<number, number>>({});
   const [checked, setChecked] = useState(false);
@@ -513,7 +515,7 @@ function MatchingExercise({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        speakGerman(pair.left);
+                        speak(pair.left);
                       }}
                       className="text-gold-500 hover:text-gold-400 shrink-0"
                     >
@@ -589,6 +591,7 @@ function WritingExercise({
   const [showModel, setShowModel] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const { speak } = useTTS();
 
   const handleSubmit = () => {
     if (text.trim().length < 10) return;
@@ -706,7 +709,7 @@ function WritingExercise({
       {showModel && (
         <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4">
           <p className="text-xs text-emerald-400 font-medium mb-2">Musterlösung:</p>
-          <p className="text-sm text-foreground/80 cursor-pointer hover:text-gold-400 transition-colors" onClick={() => speakGerman(exercise.modelAnswer)}>
+          <p className="text-sm text-foreground/80 cursor-pointer hover:text-gold-400 transition-colors" onClick={() => speak(exercise.modelAnswer)}>
             🔊 {exercise.modelAnswer}
           </p>
         </div>
@@ -730,6 +733,7 @@ function SpeakingExercise({
   const [showFeedback, setShowFeedback] = useState(false);
   const recognitionRef = useRef</* SpeechRecognition */ any>(null);
   const [speechSupported, setSpeechSupported] = useState(true);
+  const { speak } = useTTS();
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -910,7 +914,7 @@ function SpeakingExercise({
       {showModel && (
         <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4">
           <p className="text-xs text-emerald-400 font-medium mb-2">Musterlösung:</p>
-          <p className="text-sm text-foreground/80 cursor-pointer hover:text-gold-400 transition-colors" onClick={() => speakGerman(exercise.modelAnswer)}>
+          <p className="text-sm text-foreground/80 cursor-pointer hover:text-gold-400 transition-colors" onClick={() => speak(exercise.modelAnswer)}>
             🔊 {exercise.modelAnswer}
           </p>
         </div>
