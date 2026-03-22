@@ -3,7 +3,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import crypto from "crypto";
 
-const VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
+const VOICE_ID = "Qhbt6q88OM5yjxeWKS0e"; // Robin
 const MODEL_ID = "eleven_multilingual_v2";
 const OUTPUT_FORMAT = "mp3_44100_128";
 const CACHE_DIR = join(process.cwd(), ".tts-cache");
